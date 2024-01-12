@@ -12,9 +12,12 @@
   "dependencies": {
     "@discordjs/rest": "^2.2.0",
     "@types/node": "^18.0.6",
+    "axios": "^1.6.3",
     "discord-api-types": "^0.37.66",
     "discord.js": "^14.14.1",
     "djs-commander": "^0.0.50",
-    "node-fetch": "^3.2.6"
+    "mongodb": "^6.3.0",
+    "node-fetch": "^3.2.6",
+    "sharp": "^0.33.1"
   }
 }

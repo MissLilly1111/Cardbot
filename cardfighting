@@ -1,0 +1,50 @@
+class Cardfighting {
+    constructor(power, attribute, upgrade, rarity) {
+        this.power = power;
+        this.attribute = attribute;
+        this.upgrade = upgrade;
+        this.rarity = rarity;
+    }
+}
+
+// Attribute effectiveness matrix
+// Rows represent the attacker's attribute, and columns represent the defender's attribute
+// 1 means normal effectiveness, < 1 means weaker, > 1 means stronger
+const attributeMatrix = {
+    'dominating': {'dominating': 1, 'submission': 1.4, 'object': 0.7, 'concept': 1},
+    'submission': {'dominating': 0.7, 'submission': 1, 'object': 1.4, 'concept': 1},
+    'object': {'dominating': 1.4, 'submission': 0.7, 'object': 1, 'concept': 1.2},
+    'concept': {'dominating': 1, 'submission': 1, 'object': 0.5, 'concept': 1.5}
+};
+
+function calculateTotalScore(card, powerWeight, upgradeWeight, rarityWeight, opponentCard) {
+    // Attribute effectiveness
+    const effectiveness = attributeMatrix[card.attribute][opponentCard.attribute];
+
+    // Calculate total score
+    let totalScore = (card.power * powerWeight) + (card.upgrade * upgradeWeight) + (card.rarity * rarityWeight);
+
+    // Apply attribute effectiveness
+    totalScore *= effectiveness;
+
+    return totalScore;
+}
+
+
+// Example weight assignment
+const powerWeight = 2;
+const upgradeWeight = 1.5;
+const rarityWeight = 1.3;
+
+// Calculate total scores
+const score1 = calculateTotalScore(card1, powerWeight, upgradeWeight, rarityWeight, card2);
+const score2 = calculateTotalScore(card2, powerWeight, upgradeWeight, rarityWeight, card1);
+
+// Determine the winner
+if (score1 > score2) {
+    console.log("attacker wins!");
+} else if (score1 < score2) {
+    console.log("defender  wins!");
+} else {
+    console.log("It's a tie!");
+}
