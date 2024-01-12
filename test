@@ -1,0 +1,154 @@
+const { SlashCommandBuilder } = require("discord.js");
+const {
+  getGiftsInInbox,
+  getGiftsFromUserInInbox,
+  acceptGift,
+  rejectGift,
+} = require("../database.js");
+module.exports = {
+  data: new SlashCommandBuilder()
+    .setName("inbox")
+    .setDescription("Your Gift mailbox")
+    .addSubcommand((subcommand) =>
+      subcommand.setName("view").setDescription("See Pending Gifts"),
+    )
+    .addSubcommand((subcommand) =>
+  subcommand
+    .setName("accept")
+    .setDescription("Accept Gifts by Username or card_id")
+    .addStringOption((option) =>
+      option.setName("card").setDescription("Card ID to accept"),
+    )
+    .addUserOption((option) =>
+      option.setName("user").setDescription("User ID to accept gifts from"),
+    )
+    .addIntegerOption((option) =>
+      option.setName("extra_grabs").setDescription("Extra Grabs to accept"),
+    )
+    .addIntegerOption((option) =>
+      option.setName("extra_drops").setDescription("Extra Drops to accept"),
+    )
+    .addIntegerOption((option) =>
+      option.setName("currency").setDescription("Currency to accept"),
+    )
+    .addIntegerOption((option) =>
+      option.setName("dust").setDescription("Dust to accept"),
+    )
+    .addIntegerOption((option) =>
+      option.setName("parts").setDescription("Parts to accept"),
+    )
+    .addIntegerOption((option) =>
+      option.setName("fragments").setDescription("Fragments to accept"),
+    ),
+)
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("reject")
+        .setDescription("Reject gifts by Username or card_id")
+        .addStringOption((option) =>
+          option.setName("card").setDescription("Card ID to reject"),
+        )
+        .addUserOption((option) =>
+          option.setName("user").setDescription("User ID to reject gifts from"),
+        )
+        .addIntegerOption((option) =>
+          option.setName("extra_grabs").setDescription("Extra Grabs to reject"),
+        )
+        .addIntegerOption((option) =>
+          option.setName("extra_drops").setDescription("Extra Drops to reject"),
+        )
+        .addIntegerOption((option) =>
+          option.setName("currency").setDescription("Currency to reject"),
+        )
+        .addIntegerOption((option) =>
+          option.setName("dust").setDescription("Dust to reject"),
+        )
+        .addIntegerOption((option) =>
+          option.setName("parts").setDescription("Parts to reject"),
+        )
+        .addIntegerOption((option) =>
+          option.setName("fragments").setDescription("Fragments to reject"),
+        ),
+    ),
+  // Inbox command
+  async execute(interaction) {
+    const subcommand = interaction.options.getSubcommand();
+    const userId = interaction.user.id;
+
+    if (subcommand === "view") {
+      const gifts = await getGiftsInInbox(userId);
+      if (gifts.length > 0) {
+        const giftList = gifts
+          .map((gift) => {
+            let giftString = `From <@${gift.from_user_id}>: `;
+            if (gift.card_id)
+              giftString += `Card ${gift.card_name} (${gift.card_id}), `;
+            if (gift.extra_grabs)
+              giftString += `Extra Grabs: ${gift.extra_grabs}, `;
+            if (gift.extra_drops)
+              giftString += `Extra Drops: ${gift.extra_drops}, `;
+            if (gift.currency) giftString += `Currency: ${gift.currency}, `;
+            if (gift.dust) giftString += `Dust: ${gift.dust}, `;
+            if (gift.parts) giftString += `Parts: ${gift.parts}, `;
+            if (gift.fragments) giftString += `Fragments: ${gift.fragments}, `;
+            return giftString.slice(0, -2); // remove trailing comma and space
+          })
+          .join("\n");
+        await interaction.reply(`Your inbox:\n${giftList}`);
+      } else {
+        await interaction.reply("Your inbox is empty");
+      }
+    } 
+    else if (subcommand === "accept" || subcommand === "reject") {
+  const extraGrabs = interaction.options.getInteger("extra_grabs");
+  const extraDrops = interaction.options.getInteger("extra_drops");
+  const currency = interaction.options.getInteger("currency");
+  const dust = interaction.options.getInteger("dust");
+  const parts = interaction.options.getInteger("parts");
+  const fragments = interaction.options.getInteger("fragments");
+  const cardId = interaction.options.getString('card');
+  const fromUserId = interaction.options.getUser('user')?.id;
+
+  if (cardId) {
+    await (subcommand === "accept" ? acceptGift : rejectGift)(
+      userId, 
+      fromUserId, 
+      cardId, 
+      extraGrabs, 
+      extraDrops, 
+      currency, 
+      dust, 
+      parts, 
+      fragments
+    );
+    await interaction.reply(`Card ${cardId} ${subcommand}ed`);
+  } else if (fromUserId) {
+    const gifts = await getGiftsFromUserInInbox(userId, fromUserId);
+    for (const gift of gifts) {
+      if ((extraGrabs !== null && gift.extra_grabs !== extraGrabs) ||
+          (extraDrops !== null && gift.extra_drops !== extraDrops) ||
+          (currency !== null && gift.currency !== currency) ||
+          (dust !== null && gift.dust !== dust) ||
+          (parts !== null && gift.parts !== parts) ||
+          (fragments !== null && gift.fragments !== fragments)) {
+        continue; // Skip this gift if it doesn't match the provided parameters
+      }
+      await (subcommand === "accept" ? acceptGift : rejectGift)(
+        userId, 
+        fromUserId, 
+        gift.card_id, 
+        gift.extra_grabs, 
+        gift.extra_drops, 
+        gift.currency, 
+        gift.dust, 
+        gift.parts, 
+        gift.fragments
+      );
+  } else {
+    await interaction.reply({
+      content:
+        "You must provide either a card ID or a user ID to reject a gift.",
+      ephemeral: true,
+    });
+  }
+}}}
